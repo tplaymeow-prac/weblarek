@@ -1,8 +1,9 @@
 import {TPayment} from '../../types';
 import {IBuyer} from '../../types';
+import {TBuyerValidationErrors} from '../../types';
 
 export class Buyer {
-    private payment: TPayment = '';
+    private payment: TPayment | '' = '';
     private email: string = '';
     private phone: string = '';
     private address: string = '';
@@ -39,28 +40,8 @@ export class Buyer {
         this.address = ''
     }
 
-    validatePaymentAndAddress(): { payment?: string; address?: string } {
-        const errors: { payment?: string; address?: string } = {};
-
-        if (!this.payment) errors.payment = 'Не выбран способ оплаты';
-        if (!this.address.trim()) errors.address = 'Введите адрес доставки';
-        return errors;
-    }
-
-    validateContactInfo(): { email?: string; phone?: string } {
-        const error: { email?: string; phone?: string } = {};
-
-        if (!this.email.trim()) {
-            error.email = 'Укажите емэйл';
-        }
-        if (!this.phone.trim()) {
-            error.phone = 'Укажите телефон';
-        }
-        return error;
-    }
-
-    validation(): { payment?: string; address?: string; email?: string; phone?: string } {
-        const errors: { payment?: string; address?: string; email?: string; phone?: string } = {};
+    validation(): TBuyerValidationErrors {
+        const errors: TBuyerValidationErrors = {};
 
         if (!this.payment) {
             errors.payment = 'Не выбран способ оплаты';

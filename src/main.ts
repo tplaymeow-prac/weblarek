@@ -36,7 +36,7 @@ apiProducts.items.forEach(item => {
 });
 console.log('cart.getItems: ', cart.getSelectedItems());
 
-cart.deleteItem(apiProducts.items[1]);
+cart.deleteItem(apiProducts.items[1].id);
 console.log('cart.getItems: ', cart.getSelectedItems());
 
 console.log('cart.getTotalPrice: ', cart.getTotalPrice());
@@ -46,7 +46,7 @@ console.log('cart.getTotalAmount: ', cart.getTotalPrice());
 console.log('cart.isAvailable ', cart.itemExist(apiProducts.items[1].id))
 
 cart.clear();
-console.log(cart.getSelectedItems());
+console.log('cart.getSelectedItems() after clear()', cart.getSelectedItems());
 
 // Buyer
 
@@ -58,6 +58,10 @@ console.log('buyer.getData:', buyer.getData());
 
 const validationErrors = buyer.validation();
 console.log('validationErrors:', validationErrors);
+
+buyer.setPhone('');
+const validationErrorsEmptyPhone = buyer.validation();
+console.log('validationErrorsEmptyPhone:', validationErrorsEmptyPhone);
 
 buyer.clear();
 console.log('buyer.getData:', buyer.getData());

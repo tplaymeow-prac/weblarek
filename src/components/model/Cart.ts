@@ -15,8 +15,8 @@ export class Cart {
         this.selectedItems.push(item);
     }
 
-    deleteItem(item: IProduct) {
-        this.selectedItems.splice(this.selectedItems.indexOf(item), 1);
+    deleteItem(id: string): void {
+        this.selectedItems = this.selectedItems.filter(item => item.id !== id);
     }
 
     clear() {
