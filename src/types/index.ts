@@ -44,3 +44,7 @@ export interface ICatalogueResponse {
     items: IProduct[];
     total: number;
 }
+
+export interface ICardActions {
+    onClick: () => void;
+}
