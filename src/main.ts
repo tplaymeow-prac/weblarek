@@ -33,8 +33,6 @@ import {
     TPayment,
 } from './types';
 
-type ActiveForm = 'order' | 'contacts' | null;
-
 type FormChange = {
     key: keyof IBuyer;
     value: IBuyer[keyof IBuyer];
@@ -53,18 +51,16 @@ const header = new Header(ensureElement<HTMLFormElement>('.header'), events);
 const gallery = new Gallery(ensureElement<HTMLFormElement>('.gallery'));
 const modal = new Modal(ensureElement<HTMLFormElement>('.modal'), events);
 
-const basket = new Basket(cloneTemplate<HTMLFormElement>('#basket'), events);
-const orderSuccess = new OrderSuccess(cloneTemplate<HTMLFormElement>('#success'), events);
-
-const orderForm = new OrderForm(cloneTemplate<HTMLFormElement>('#order'), events);
-const contactsForm = new ContactsForm(cloneTemplate<HTMLFormElement>('#contacts'), events);
-
 const catalogueTemplate = ensureElement<HTMLTemplateElement>('#card-catalog');
 const previewTemplate = ensureElement<HTMLTemplateElement>('#card-preview');
 const basketTemplate = ensureElement<HTMLTemplateElement>('#card-basket');
 
-let activeForm: ActiveForm = null;
-let previewCard: CardPreview | null = null;
+const basket = new Basket(cloneTemplate<HTMLFormElement>('#basket'), events);
+const orderSuccess = new OrderSuccess(cloneTemplate<HTMLFormElement>('#success'), events);
+const previewCard = new CardPreview(cloneTemplate<HTMLFormElement>(previewTemplate), events);
+
+const orderForm = new OrderForm(cloneTemplate<HTMLFormElement>('#order'), events);
+const contactsForm = new ContactsForm(cloneTemplate<HTMLFormElement>('#contacts'), events);
 
 const getErrorsText = (
     errors: TBuyerValidationErrors,
@@ -76,8 +72,8 @@ const getErrorsText = (
         .join('; ');
 };
 
-const updatePreviewButton = (item: IProduct): void => {
-    if (!previewCard) {
+const updatePreviewButton = (item: IProduct | null): void => {
+    if (!item) {
         return;
     }
 
@@ -114,8 +110,8 @@ const fillContactsForm = (): void => {
 };
 
 networkService.getCatalogue()
-    .then((items) => {
-        catalogue.save(items);
+    .then((response) => {
+        catalogue.save(response.items);
     })
     .catch((error) => {
         console.error('Не удалось получить товары с сервера:', error);
@@ -135,8 +131,6 @@ events.on('catalog:change', () => {
 });
 
 events.on('item:select', (item: IProduct) => {
-    previewCard = new CardPreview(cloneTemplate<HTMLFormElement>(previewTemplate), events);
-
     const content = previewCard.render(item);
 
     updatePreviewButton(item);
@@ -182,6 +176,8 @@ events.on('basket:change', () => {
     basket.items = cards;
     basket.total = cart.getTotalPrice();
     basket.submitDisabled = cart.getNumberOfItems() === 0;
+
+    updatePreviewButton(catalogue.getSelectedItem());
 });
 
 events.on('basket:open', () => {
@@ -190,8 +186,6 @@ events.on('basket:open', () => {
 });
 
 events.on('basket:submit', () => {
-    activeForm = 'order';
-
     fillOrderForm();
 
     modal.content = orderForm.render();
@@ -199,33 +193,23 @@ events.on('basket:submit', () => {
 });
 
 events.on('buyer:change', (data: IBuyer) => {
-    if (activeForm === 'order') {
-        orderForm.payment = data.payment as TPayment;
-        orderForm.address = data.address;
-    }
+    const errors = buyer.validation();
 
-    if (activeForm === 'contacts') {
-        contactsForm.email = data.email;
-        contactsForm.phone = data.phone;
-    }
+    orderForm.payment = data.payment as TPayment;
+    orderForm.address = data.address;
+    orderForm.errors = getErrorsText(errors, ['payment', 'address']);
+    orderForm.valid = !errors.payment && !errors.address;
+
+    contactsForm.email = data.email;
+    contactsForm.phone = data.phone;
+    contactsForm.errors = getErrorsText(errors, ['email', 'phone']);
+    contactsForm.valid = !errors.email && !errors.phone;
 });
 
 events.on('form:change', (data: FormChange) => {
     buyer.setData({
         [data.key]: data.value,
     } as Partial<IBuyer>);
-
-    const errors = buyer.validation();
-
-    if (activeForm === 'order') {
-        orderForm.errors = getErrorsText(errors, ['payment', 'address']);
-        orderForm.valid = !errors.payment && !errors.address;
-    }
-
-    if (activeForm === 'contacts') {
-        contactsForm.errors = getErrorsText(errors, ['email', 'phone']);
-        contactsForm.valid = !errors.email && !errors.phone;
-    }
 });
 
 events.on('order:submit', () => {
@@ -235,8 +219,6 @@ events.on('order:submit', () => {
         orderForm.errors = getErrorsText(errors, ['payment', 'address']);
         return;
     }
-
-    activeForm = 'contacts';
 
     fillContactsForm();
 
@@ -263,9 +245,6 @@ events.on('contacts:submit', () => {
 
             modal.content = orderSuccess.render();
 
-            activeForm = null;
-            previewCard = null;
-
             buyer.clear();
             cart.clear();
         })
@@ -275,10 +254,7 @@ events.on('contacts:submit', () => {
         });
 });
 
-events.on('modal:close', () => {
-    activeForm = null;
-    previewCard = null;
-
+events.on('succsess-modal:close', () => {
     modal.close();
 });
 
